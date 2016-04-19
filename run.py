@@ -9,10 +9,10 @@ version = 2
 block_io = BlockIo('Blockio api key', 'Blockio pin', version)
 active_users = {}
 
-def getCount():
+def getCount(chatid):
     n = []
     t = time.time()
-    for i in active_users:
+    for i in active_users[chatid]:
         if t - active_users[i] <= 600:
             n.append(i)
     return n
@@ -67,12 +67,13 @@ def process(message,username,chatid):
 
     elif "/rain" in message[0]:
         try:
-            users = getCount()
+            users = getCount(chatid)
             if username in users:
                 users.remove(username)
             number = len(users)
 
             amount = ("10," * (number - 1)) + '10'
+			name = username
             username = ((username+',') * (number - 1)) + username
             if number < 2:
                 sendMsg("@"+username+" less than 2 shibes are active.",chatid)
@@ -80,15 +81,15 @@ def process(message,username,chatid):
                 print(amount)
                 print(username)
                 block_io.withdraw_from_labels(amounts=amount, from_labels=username, to_labels=','.join(users))
-                sendMsg("@"+username+" is raining on "+','.join(users)+"",chatid)
+                sendMsg("@"+name+" is raining on "+','.join(users)+"",chatid)
         except:
             pass
 
     elif "/active" in message:
-        sendMsg("Current active : %d shibes" %(len(getCount())),chatid)
+        sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
     else:
 	global active_users
-        active_users[username] = time.time()
+        active_users[chatid][username] = time.time()
 
 while True:
     try:
