@@ -12,8 +12,9 @@ active_users = {}
 def getCount(chatid):
     n = []
     t = time.time()
-    for i in active_users[chatid]:
-        if t - active_users[i] <= 600:
+    chat_users = active_users[chatid]
+    for i in chat_users:
+        if t - chat_users[i] <= 600:
             n.append(i)
     return n
 
@@ -89,7 +90,11 @@ def process(message,username,chatid):
         sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
     else:
 	global active_users
-        active_users[chatid][username] = time.time()
+	try:
+        	active_users[chatid][username] = time.time()
+        except KeyError:
+        	active_users[chatid] = {}
+        	active_users[chatid][username] = time.time()
 
 while True:
     try:
