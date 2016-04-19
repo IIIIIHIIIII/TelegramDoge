@@ -100,4 +100,4 @@ while True:
         message = data["result"][0]["message"]["text"]
         process(message,username,chatid)
     except:
-        print(data)
+        pass
