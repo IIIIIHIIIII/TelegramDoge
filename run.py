@@ -73,7 +73,7 @@ def process(message,username,chatid):
             number = len(users)
 
             amount = ("10," * (number - 1)) + '10'
-			name = username
+            name = username
             username = ((username+',') * (number - 1)) + username
             if number < 2:
                 sendMsg("@"+username+" less than 2 shibes are active.",chatid)
