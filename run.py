@@ -58,7 +58,7 @@ def process(message,username,chatid):
             sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
     elif "/withdraw" in message[0]:
         try:
-            amount = abs(float(message[3]))
+            amount = abs(float(message[1]))
             address = message[2]
             data = block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_addresses=address)
         except ValueError:
