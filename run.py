@@ -1,12 +1,13 @@
 import requests
 import time
 from block_io import BlockIo
+import os
 
-token = "" #Telegram bot token
+token = os.environ['TELEGRAM_BOT_TOKEN'] #Telegram bot token
 url = "https://api.telegram.org/bot%s/" %(token)
 n = 0
 version = 2
-block_io = BlockIo('Blockio api key', 'Blockio pin', version)
+block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
 active_users = {}
 
 def getCount(chatid):
