@@ -90,15 +90,16 @@ def process(message,username,chatid):
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
 	else:
-	global active_users
-	try:
-			active_users[chatid][username] = time.time()
+		global active_users
+		try:
+				active_users[chatid][username] = time.time()
 		except KeyError:
 			active_users[chatid] = {}
 			active_users[chatid][username] = time.time()
 
 while True:
 	try:
+		print("such dogeshift. much running.")
 		data = requests.get(url+"getUpdates", data={"offset":n}).json()
 		n = data["result"][0]["update_id"] + 1
 		username = data["result"][0]["message"]["from"]['username']
