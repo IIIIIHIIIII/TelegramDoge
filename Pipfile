@@ -2,5 +2,5 @@
 python_version = "2.7"
 
 [packages]
-requests = "3.0.4"
-block-io = "1.1.6"
+requests = "*"
+block-io = "*"
