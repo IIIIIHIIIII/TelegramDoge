@@ -10,19 +10,14 @@ version = 2
 block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
 active_users = {}
 
-monikers = {
-			"sandwich" : 21,
-			"sandwiches" : 21,
-			"coffee" : 7,
-			"coffees" : 7,
-			"cup of coffee" : 7,
-			"cups of coffee" : 7,
-			"tea" : 5,
-			"teas" : 5,
-			"cup of tea" : 5,
-			"cups of tea" : 5,
-			"lunch" : 49
-}
+monikers_tuple  = [
+	("sandwich","sandwiches",21),
+	("coffee", "coffees",7),
+	("tea", "teas",5),
+	("lunch", "lunches",49)
+]
+monikers_dict = {n[i]: n[2] for n in monikers_tuple for i in range(2)}
+monikers_flat = [monikers_tuple[i][j] for i in range(len(monikers_tuple)) for j in range(3)]
 
 def getCount(chatid):
 	n = []
@@ -58,10 +53,12 @@ def process(message,username,chatid):
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
-			amount_msg = 1 if message[2] in ('a', 'an') else message[2]
-			amount = abs(float(amount_msg)) * monikers.get(message[3], 1)
+			amount_msg = 1 if message[2] in ('a', 'an', '1') else message[2]
+			amount = abs(float(amount_msg)) * monikers_dict.get(message[3], 1)
+			sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][0] if amount_msg==1 else monikers_tuple[monikers_flat.index(message[3])//3][1]
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
-			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + (message[3] if monikers.get(message[3], 1)!=1 else "doge") +
+			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " +
+					(sin_plu if monikers_dict.get(message[3], 1)!=1 else "doge") +
 					" to @"+person+"",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
