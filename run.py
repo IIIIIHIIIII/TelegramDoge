@@ -58,10 +58,11 @@ def process(message,username,chatid):
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
-			amount = 1 if message[2] in ('a', 'an') else message[2]
-			amount = abs(float(amount)) * monikers.get(message[3], 1)
+			amount_msg = 1 if message[2] in ('a', 'an') else message[2]
+			amount = abs(float(amount_msg)) * monikers.get(message[3], 1)
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
-			sendMsg("@"+username+" tipped "+ str(amount) + " doge to @"+person+"",chatid)
+			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + (message[3] if monikers.get(message[3], 1)!=1 else "doge") +
+					" to @"+person+"",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
 		except:
