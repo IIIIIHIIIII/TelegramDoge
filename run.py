@@ -55,10 +55,16 @@ def process(message,username,chatid):
 			person = message[1].replace('@','')
 			amount_msg = 1 if message[2] in ('a', 'an', '1') else message[2]
 			amount = abs(float(amount_msg)) * monikers_dict.get(message[3], 1)
-			sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][0] if amount_msg==1 else monikers_tuple[monikers_flat.index(message[3])//3][1]
+
+			if monikers_dict.get(message[3], 0) == 0:
+				sin_plu = "doge"
+			elif amount_msg == 1:
+				sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][0]
+			else:
+				sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][1]
+
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
-			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " +
-					(sin_plu if monikers_dict.get(message[3], 1)!=1 else "doge") +
+			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + sin_plu +
 					" to @"+person+"",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
