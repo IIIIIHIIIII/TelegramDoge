@@ -65,6 +65,7 @@ def process(message,username,chatid):
 
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
 			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + sin_plu +
+					("" if monikers_dict.get(message[3], 0) == 0 else f" ({str(amount)} doge)") +
 					" to @"+person+"",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
