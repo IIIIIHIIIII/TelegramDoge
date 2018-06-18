@@ -11,17 +11,17 @@ block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], ver
 active_users = {}
 
 monikers = {
-            "sandwich" : 21,
-            "sandwiches" : 21,
-            "coffee" : 7,
-            "coffees" : 7,
-            "cup of coffee" : 7,
-            "cups of coffee" : 7,
-            "tea" : 5,
-            "teas" : 5,
-            "cup of tea" : 5,
-            "cups of tea" : 5,
-            "lunch" : 49
+			"sandwich" : 21,
+			"sandwiches" : 21,
+			"coffee" : 7,
+			"coffees" : 7,
+			"cup of coffee" : 7,
+			"cups of coffee" : 7,
+			"tea" : 5,
+			"teas" : 5,
+			"cup of tea" : 5,
+			"cups of tea" : 5,
+			"lunch" : 49
 }
 
 def getCount(chatid):
@@ -54,7 +54,7 @@ def process(message,username,chatid):
 			pending_balance = data['data']['balances'][0]['pending_received_balance']
 			sendMsg("@"+username+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
 		except:
-			sendMsg("@"+username+" you are not regsitered yet. use /register to register.",chatid)
+			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
