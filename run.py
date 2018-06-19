@@ -18,7 +18,7 @@ monikers_tuple  = [
 ]
 monikers_dict = {n[i]: n[2] for n in monikers_tuple for i in range(2)}
 monikers_flat = [monikers_tuple[i][j] for i in range(len(monikers_tuple)) for j in range(3)]
-moniker_string  = '\n'.join(f"{i[0]}: {i[2]} doge" for i in monikers_tuple)
+monikers_str  = '\n'.join(f"{i[0]}: {i[2]} doge" for i in monikers_tuple)
 
 def getCount(chatid):
 	n = []
@@ -110,7 +110,7 @@ def process(message,username,chatid):
 
 	elif "/monikers" in message:
 		sendMsg("--MONIKERS--\n" +
-			moniker_string,chatid)
+			monikers_str,chatid)
 
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
