@@ -10,6 +10,20 @@ version = 2
 block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
 active_users = {}
 
+monikers = {
+            "sandwich" : 21,
+            "sandwiches" : 21,
+            "coffee" : 7,
+            "coffees" : 7,
+            "cup of coffee" : 7,
+            "cups of coffee" : 7,
+            "tea" : 5,
+            "teas" : 5,
+            "cup of tea" : 5,
+            "cups of tea" : 5,
+            "lunch" : 49
+}
+
 def getCount(chatid):
 	n = []
 	t = time.time()
@@ -44,7 +58,7 @@ def process(message,username,chatid):
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
-			amount = abs(float(message[2]))
+			amount = abs(float(message[2])) * monikers.get(message[3], 1)
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
 			sendMsg("@"+username+" tipped "+ str(amount) + " doge to @"+person+"",chatid)
 		except ValueError:
