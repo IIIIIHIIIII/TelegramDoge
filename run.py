@@ -32,6 +32,12 @@ def getCount(chatid):
 def sendMsg(message,chatid):
 	requests.get(url + "sendMessage", data={"chat_id":chatid,"text":message})
 
+def returnBal(username):
+	data = block_io.get_address_balance(labels=username)
+	balance = data['data']['balances'][0]['available_balance']
+	pending_balance = data['data']['balances'][0]['pending_received_balance']
+	return (balance, pending_balance)
+
 def process(message,username,chatid):
 	message = message.split(" ")
 	for i in range(message.count(' ')):
@@ -45,9 +51,7 @@ def process(message,username,chatid):
 			sendMsg("@"+username+" you are already registered.",chatid)
 	elif "/balance" in message[0]:
 		try:
-			data = block_io.get_address_balance(labels=username)
-			balance = data['data']['balances'][0]['available_balance']
-			pending_balance = data['data']['balances'][0]['pending_received_balance']
+			(balance, pending_balance) = returnBal(username)
 			sendMsg("@"+username+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
 		except:
 			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
@@ -68,6 +72,8 @@ def process(message,username,chatid):
 			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + sin_plu +
 					("" if monikers_dict.get(message[3], 0) == 0 else f" ({str(amount)} doge)") +
 					" to @"+person+"",chatid)
+			(balance, pending_balance) = returnBal(person)
+			sendMsg("@"+person+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
 		except:
