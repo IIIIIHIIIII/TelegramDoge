@@ -10,19 +10,15 @@ version = 2
 block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
 active_users = {}
 
-monikers = {
-            "sandwich" : 21,
-            "sandwiches" : 21,
-            "coffee" : 7,
-            "coffees" : 7,
-            "cup of coffee" : 7,
-            "cups of coffee" : 7,
-            "tea" : 5,
-            "teas" : 5,
-            "cup of tea" : 5,
-            "cups of tea" : 5,
-            "lunch" : 49
-}
+monikers_tuple  = [
+	("sandwich","sandwiches",21),
+	("coffee", "coffees",7),
+	("tea", "teas",5),
+	("lunch", "lunches",49)
+]
+monikers_dict = {n[i]: n[2] for n in monikers_tuple for i in range(2)}
+monikers_flat = [monikers_tuple[i][j] for i in range(len(monikers_tuple)) for j in range(3)]
+monikers_str  = '\n'.join(f"{i[0]}: {i[2]} doge" for i in monikers_tuple)
 
 def getCount(chatid):
 	n = []
@@ -35,6 +31,12 @@ def getCount(chatid):
 
 def sendMsg(message,chatid):
 	requests.get(url + "sendMessage", data={"chat_id":chatid,"text":message})
+
+def returnBal(username):
+	data = block_io.get_address_balance(labels=username)
+	balance = data['data']['balances'][0]['available_balance']
+	pending_balance = data['data']['balances'][0]['pending_received_balance']
+	return (balance, pending_balance)
 
 def process(message,username,chatid):
 	message = message.split(" ")
@@ -49,18 +51,29 @@ def process(message,username,chatid):
 			sendMsg("@"+username+" you are already registered.",chatid)
 	elif "/balance" in message[0]:
 		try:
-			data = block_io.get_address_balance(labels=username)
-			balance = data['data']['balances'][0]['available_balance']
-			pending_balance = data['data']['balances'][0]['pending_received_balance']
+			(balance, pending_balance) = returnBal(username)
 			sendMsg("@"+username+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
 		except:
-			sendMsg("@"+username+" you are not regsitered yet. use /register to register.",chatid)
+			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
-			amount = abs(float(message[2])) * monikers.get(message[3], 1)
+			amount_msg = 1 if message[2] in ('a', 'an', '1') else message[2]
+			amount = abs(float(amount_msg)) * monikers_dict.get(message[3], 1)
+
+			if monikers_dict.get(message[3], 0) == 0:
+				sin_plu = "doge"
+			elif amount_msg == 1:
+				sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][0]
+			else:
+				sin_plu = monikers_tuple[monikers_flat.index(message[3])//3][1]
+
 			block_io.withdraw_from_labels(amounts=str(amount), from_labels=username, to_labels=person)
-			sendMsg("@"+username+" tipped "+ str(amount) + " doge to @"+person+"",chatid)
+			sendMsg("@"+username+" tipped "+ str(amount_msg) + " " + sin_plu +
+					("" if monikers_dict.get(message[3], 0) == 0 else f" ({str(amount)} doge)") +
+					" to @"+person+"",chatid)
+			(balance, pending_balance) = returnBal(person)
+			sendMsg("@"+person+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
 		except:
@@ -100,6 +113,10 @@ def process(message,username,chatid):
 				sendMsg("@"+name+" is raining on "+','.join(users)+"",chatid)
 		except:
 			pass
+
+	elif "/monikers" in message:
+		sendMsg("--MONIKERS--\n" +
+			monikers_str,chatid)
 
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
