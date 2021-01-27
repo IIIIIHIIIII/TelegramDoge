@@ -2,6 +2,7 @@ import requests
 import time
 from block_io import BlockIo
 import os
+import math
 
 token = os.environ['TELEGRAM_BOT_TOKEN'] #Telegram bot token
 url = "https://api.telegram.org/bot%s/" %(token)
@@ -46,13 +47,13 @@ def process(message,firstname,username,chatid):
 # /start
 	if "/start" in message[0]:
 		try:
-			sendMsg(str(username)+" welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
+			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 50 : "+str(e))
 # /help
 	elif "/help" in message[0]:
 		try:
-			sendMsg(str(username)+" welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
+			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 55 : "+str(e))
 # /register
@@ -88,7 +89,7 @@ def process(message,firstname,username,chatid):
 					("" if monikers_dict.get(message[3], 0) == 0 else f" ({str(amount)} doge)") +
 					" to @"+person+"",chatid)
 			(balance, pending_balance) = returnBal(person)
-			sendMsg("@"+person+" Balance : "+balance+ "Doge ("+pending_balance+" Doge)",chatid)
+			sendMsg("@"+person+" Balance : "+math.floor(balance)+ "Doge ("+math.floor(pending_balance)+" Doge)",chatid)
 		except ValueError:
 			sendMsg("@"+username+" invalid amount.",chatid)
 		except:
@@ -149,8 +150,6 @@ while True:
 	try:
 		print("such dogeshift. much running. ",time.time())
 		data = requests.get(url+"getUpdates", data={"offset":n}).json()
-		#print(data)
-		#print(" \n ")
 		n = data["result"][0]["update_id"] + 1
 		try:
 			username = data["result"][0]["message"]["from"]["username"]
