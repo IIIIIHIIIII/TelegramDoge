@@ -1,12 +1,14 @@
+import datetime
+import json
+import math
+import os
 import requests
 import time
+from urllib.parse import urljoin
+
 from block_io import BlockIo
-import os
-import math
-import json
 from github import Github
 import yaml
-import datetime
 from markdown_it import MarkdownIt
 
 
@@ -52,9 +54,25 @@ def getCount(chatid):
 			n.append(i)
 	return n
 
-def sendMsg(message,chatid,mode = None):
-	print("just sent a message to - "+str(chatid))
-	requests.get(URL + "sendMessage", data={"chat_id":chatid,"text":message,"parse_mode":mode})
+def sendMsg(message, chatid, mode=None):
+	# Prepare request data
+	endpoint = urljoin(URL, "sendMessage")
+	data = {
+		"chat_id": chatid,
+		"text": message,
+		"parse_mode": mode
+	}
+
+	# Send GET request
+	resp = requests.get(endpoint, data=data)
+	success = (200 <= resp.status_code <= 299)
+	if success:
+		print(f"just sent a message to - {chatid}")
+	else:
+		print(f"failed to send message to - {chatid}: " +
+			  f"({resp.status_code}: {resp.reason})")
+
+	return None
 
 def returnBal(username):
 	data = block_io.get_address_balance(labels=username)
@@ -219,19 +237,29 @@ print("-- Bot Started Successfully >_<")
 
 while True:
 	try:
-		data = requests.get(URL+"getUpdates", data={"offset":UPDATES_OFFSET}).json()
+		updates_endpoint = urljoin(URL, "getUpdates")
+		updates_data = {
+			"offset": UPDATES_OFFSET,
+		}
+
+		resp = requests.get(updates_endpoint, data=updates_data)
+		data = resp.json()
+
 		UPDATES_OFFSET = data["result"][0]["update_id"] + 1
 		try:
 			username = data["result"][0]["message"]["from"]["username"]
 		except:
 			username = "UnKnown uname"
+
 		try:
 			firstname = data["result"][0]["message"]["from"]["first_name"]
 		except Exception as e:
 			print(e)
 			firstname = "Unknown name"
+
 		chatid = data["result"][0]["message"]["chat"]["id"]
 		message = data["result"][0]["message"]["text"]
 		process(message,firstname,username,chatid)
-	except:
+
+	except Exception as e:
 		pass
