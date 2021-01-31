@@ -253,6 +253,7 @@ def serve():
 			data = resp.json()
 
 			UPDATES_OFFSET = data["result"][0]["update_id"] + 1
+
 			try:
 				username = data["result"][0]["message"]["from"]["username"]
 			except:
