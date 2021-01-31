@@ -33,7 +33,7 @@ Once you have a Block.io Account setup, and created your own Telegram Bot it's t
 3. `pip install block-io`
 4. `pip install requests`
 5. `pip install behave`
-6. `TELEGRAM_BOT_TOKEN=<your token> BLOCKIO_API_KEY=<your key> BLOCKIO_PIN=<your pin> ACCESS_TOKEN=<github access token> python3 run.py`
+6. `TELEGRAM_BOT_TOKEN=<your token> BLOCKIO_API_KEY=<your key> BLOCKIO_PIN=<your pin> GITHUB_ACCESS_TOKEN=<github access token> python3 run.py`
 
 _In step 5, replace the entire of `<your token>`, `<your token>`, `<your token>`,`<github access token>`._
 

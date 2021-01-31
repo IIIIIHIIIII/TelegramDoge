@@ -10,15 +10,27 @@ import datetime
 from markdown_it import MarkdownIt
 
 
-os.system('clear')
-access_token = os.environ['ACCESS_TOKEN']
-token = os.environ['TELEGRAM_BOT_TOKEN'] #Telegram bot token
+# Global constants
+TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
+URL = f"https://api.telegram.org/bot{TOKEN}/"
 
-url = "https://api.telegram.org/bot%s/" %(token)
-n = 0
-version = 2
-block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
-active_users = {}
+UPDATES_OFFSET = 0
+
+
+# Clients
+BLOCKIO_API_KEY = os.environ['BLOCKIO_API_KEY']
+BLOCKIO_PIN = os.environ['BLOCKIO_PIN']
+VERSION = 2
+block_io = BlockIo(BLOCKIO_API_KEY, BLOCKIO_PIN, VERSION)
+
+GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
+github_client = Github(GITHUB_ACCESS_TOKEN)
+
+
+# Global objects
+MD = MarkdownIt()
+ACTIVE_USERS = {}
+
 
 monikers_tuple  = [
 	("sandwich","sandwiches",21),
@@ -30,12 +42,11 @@ monikers_dict = {n[i]: n[2] for n in monikers_tuple for i in range(2)}
 monikers_flat = [monikers_tuple[i][j] for i in range(len(monikers_tuple)) for j in range(3)]
 monikers_str  = '\n'.join(f"{i[0]}: {i[2]} doge" for i in monikers_tuple)
 
-md = ( MarkdownIt() )
 
 def getCount(chatid):
 	n = []
 	t = time.time()
-	chat_users = active_users[chatid]
+	chat_users = ACTIVE_USERS[chatid]
 	for i in chat_users:
 		if t - chat_users[i] <= 600:
 			n.append(i)
@@ -43,7 +54,7 @@ def getCount(chatid):
 
 def sendMsg(message,chatid,mode = None):
 	print("just sent a message to - "+str(chatid))
-	requests.get(url + "sendMessage", data={"chat_id":chatid,"text":message,"parse_mode":mode})
+	requests.get(URL + "sendMessage", data={"chat_id":chatid,"text":message,"parse_mode":mode})
 
 def returnBal(username):
 	data = block_io.get_address_balance(labels=username)
@@ -85,10 +96,9 @@ def process(message,firstname,username,chatid):
 # /work
 	elif "/work" in message[0]:
 		repos = ['peakshift/telegram-dogecoin']
-		g = Github(access_token)
 		msg1 = ""
 		for rep in repos:
-			repo = g.get_repo(rep)
+			repo = github_client.get_repo(rep)
 			open_issues = repo.get_issues()
 			a = 0
 			msg1 += "\n<b>"+str(repo.full_name)+"</b>\n\n"
@@ -97,7 +107,7 @@ def process(message,firstname,username,chatid):
 				for x in issue.labels:
 					if x.name == "reward":
 						open_issues = repo.get_issue(number=int(issue.number))
-						one = md.parse(open_issues.body)
+						one = MD.parse(open_issues.body)
 						ym = yaml.safe_load(one[0].content)
 						ymm = json.loads(json.dumps(ym, default = myconverter))
 						msg1 += "<code>#"+str(issue.number)+" > "+str(issue.title)+" -- "+str(ym['Reward'])+" 💰\n</code>"
@@ -109,10 +119,9 @@ def process(message,firstname,username,chatid):
 		spl = str(message[0]).split("_")
 		if spl[1] != None:
 			#sendMsg(spl[1],chatid)
-			g = Github(access_token)
-			repo = g.get_repo('peakshift/telegram-dogecoin')
+			repo = github_client.get_repo('peakshift/telegram-dogecoin')
 			open_issues = repo.get_issue(number=int(spl[1]))
-			#one = md.parse(open_issues.body)
+			#one = MD.parse(open_issues.body)
 			sendMsg(open_issues.body,chatid,"markdown")
 		else:
 			sendMsg("null",chatid)
@@ -200,19 +209,18 @@ def process(message,firstname,username,chatid):
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
 	else:
-		global active_users
 		try:
-			active_users[chatid][username] = time.time()
+			ACTIVE_USERS[chatid][username] = time.time()
 		except KeyError:
-			active_users[chatid] = {}
-			active_users[chatid][username] = time.time()
+			ACTIVE_USERS[chatid] = {}
+			ACTIVE_USERS[chatid][username] = time.time()
 
 print("-- Bot Started Successfully >_<")
 
 while True:
 	try:
-		data = requests.get(url+"getUpdates", data={"offset":n}).json()
-		n = data["result"][0]["update_id"] + 1
+		data = requests.get(URL+"getUpdates", data={"offset":UPDATES_OFFSET}).json()
+		UPDATES_OFFSET = data["result"][0]["update_id"] + 1
 		try:
 			username = data["result"][0]["message"]["from"]["username"]
 		except:
