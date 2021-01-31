@@ -241,31 +241,36 @@ def process(message, firstname, username, chatid):
 
 print("-- Bot Started Successfully >_<")
 
-while True:
-	try:
-		updates_endpoint = urljoin(URL, "getUpdates")
-		updates_data = {
-			"offset": UPDATES_OFFSET,
-		}
-
-		resp = requests.get(updates_endpoint, data=updates_data)
-		data = resp.json()
-
-		UPDATES_OFFSET = data["result"][0]["update_id"] + 1
+def serve():
+	while True:
 		try:
-			username = data["result"][0]["message"]["from"]["username"]
-		except:
-			username = "UnKnown uname"
+			updates_endpoint = urljoin(URL, "getUpdates")
+			updates_data = {
+				"offset": UPDATES_OFFSET,
+			}
 
-		try:
-			firstname = data["result"][0]["message"]["from"]["first_name"]
+			resp = requests.get(updates_endpoint, data=updates_data)
+			data = resp.json()
+
+			UPDATES_OFFSET = data["result"][0]["update_id"] + 1
+			try:
+				username = data["result"][0]["message"]["from"]["username"]
+			except:
+				username = "UnKnown uname"
+
+			try:
+				firstname = data["result"][0]["message"]["from"]["first_name"]
+			except Exception as e:
+				print(e)
+				firstname = "Unknown name"
+
+			chatid = data["result"][0]["message"]["chat"]["id"]
+			message = data["result"][0]["message"]["text"]
+			process(message,firstname,username,chatid)
+
 		except Exception as e:
-			print(e)
-			firstname = "Unknown name"
+			pass
 
-		chatid = data["result"][0]["message"]["chat"]["id"]
-		message = data["result"][0]["message"]["text"]
-		process(message,firstname,username,chatid)
 
-	except Exception as e:
-		pass
+if __name__ == "__main__":
+	serve()
