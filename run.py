@@ -84,34 +84,40 @@ def myconverter(o):
 	if isinstance(o, datetime.datetime):
 		return o.__str__()
 
-def process(message,firstname,username,chatid):
+def process(message, firstname, username, chatid):
 	message = message.split(" ")
 	for i in range(message.count(' ')):
 		message.remove(' ')
 
-# /start
+	# /start
 	if "/start" in message[0]:
 		try:
 			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 50 : "+str(e))
 
-# /help
+	# /help
 	elif "/help" in message[0]:
 		try:
 			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 55 : "+str(e))
 
-# /register
+	# /register
 	elif "/register" in message[0]:
 		try:
-			a = block_io.get_new_address(label=username)
-			sendMsg("@"+username+" you are now registered.\nYour Address : <code>"+str(a['data']['address'])+"</code>",chatid)
-		except:
-			sendMsg("@"+username+" you are already registered.",chatid)
+			resp = block_io.get_new_address(label=username)
+			addr = resp['data']['address']
 
-# /work
+			msg = f"@{username} you are now registered.\n" +\
+				  f"Your Address : <code>{addr}</code>"
+
+		except Exception as e:
+			msg = f"@{username} you are already registered."
+
+		sendMsg(msg, chatid)
+
+	# /work
 	elif "/work" in message[0]:
 		repos = ['peakshift/telegram-dogecoin']
 		msg1 = ""
@@ -132,7 +138,7 @@ def process(message,firstname,username,chatid):
 		msg1 += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
 		sendMsg(msg1,chatid,"html")
 
-# /body
+	# /body
 	elif "/body" in message[0]:
 		spl = str(message[0]).split("_")
 		if spl[1] != None:
@@ -144,7 +150,7 @@ def process(message,firstname,username,chatid):
 		else:
 			sendMsg("null",chatid)
 
-# /balance
+	# /balance
 	elif "/balance" in message[0]:
 		try:
 			(balance, pending_balance) = returnBal(username)
@@ -153,7 +159,7 @@ def process(message,firstname,username,chatid):
 			print(e)
 			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
 
-# /tip
+	# /tip
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
@@ -178,7 +184,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" insufficient balance or @"+person+" is not registered yet.",chatid)
 
-# /address
+	# /address
 	elif "/address" in message[0]:
 		try:
 			data = block_io.get_address_by_label(label=username)
@@ -186,7 +192,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
 
-# /withdraw
+	# /withdraw
 	elif "/withdraw" in message[0]:
 		try:
 			amount = abs(float(message[1]))
@@ -197,7 +203,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" insufficient balance or you are not registered yet.",chatid)
 
-# /rain
+	# /rain
 	elif "/rain" in message[0]:
 		try:
 			users = getCount(chatid)
@@ -218,12 +224,12 @@ def process(message,firstname,username,chatid):
 		except:
 			pass
 
-# /monikers
+	# /monikers
 	elif "/monikers" in message:
 		sendMsg("--MONIKERS--\n" +
 			monikers_str,chatid)
 
-# /active
+	# /active
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
 	else:
