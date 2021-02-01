@@ -81,7 +81,7 @@ def returnBal(username):
 	return (balance, pending_balance)
 
 def myconverter(o):
-	if isinstance(o, datetime.datetime):
+	if isinstance(o, datetime.date) or isinstance(o, datetime.datetime):
 		return o.__str__()
 
 def process(message, firstname, username, chatid):
@@ -115,28 +115,55 @@ def process(message, firstname, username, chatid):
 		except Exception as e:
 			msg = f"@{username} you are already registered."
 
-		sendMsg(msg, chatid)
+		try:
+			sendMsg(msg, chatid)
+		except Exception as e:
+			pass
 
 	# /work
 	elif "/work" in message[0]:
-		repos = ['peakshift/telegram-dogecoin']
-		msg1 = ""
-		for rep in repos:
-			repo = github_client.get_repo(rep)
-			open_issues = repo.get_issues()
-			a = 0
-			msg1 += "\n<b>"+str(repo.full_name)+"</b>\n\n"
+		repos = [
+			'peakshift/telegram-dogecoin',
+		]
+
+		# Fetch issues with reward label
+		reward_issues = {}
+		for repo_label in repos:
+			repo_obj = github_client.get_repo(repo_label)
+
+			open_reward_issues = \
+				[issue for issue in repo_obj.get_issues()
+					if "reward" in [label.name for label in issue.labels] ]
+
+			if open_reward_issues:
+				reward_issues[repo_label] = open_reward_issues
+
+		# Parse reward issue yaml and return info
+		msg = ""
+		for repo_label, open_issues in reward_issues.items():
+			msg += f"\n<b>{repo_label}</b>\n\n"
+
 			for issue in open_issues:
-				a += 1
-				for x in issue.labels:
-					if x.name == "reward":
-						open_issues = repo.get_issue(number=int(issue.number))
-						one = MD.parse(open_issues.body)
-						ym = yaml.safe_load(one[0].content)
-						ymm = json.loads(json.dumps(ym, default = myconverter))
-						msg1 += "<code>#"+str(issue.number)+" > "+str(issue.title)+" -- "+str(ym['Reward'])+" 💰\n</code>"
-		msg1 += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
-		sendMsg(msg1,chatid,"html")
+				# TODO: This assumes the yaml is right at the start
+				#		of issue body. Explore making this more robust
+				md_objs = MD.parse(issue.body)
+				yaml_md_obj = None
+				if md_objs:
+					yaml_md_obj, *_ = md_objs
+
+				if yaml_md_obj is not None:
+					issue_yaml = yaml_md_obj.content
+					issue_json = yaml.safe_load(issue_yaml)
+					# issue_json_normalized = json.loads(json.dumps(issue_json, default=myconverter))
+					msg += f"<code>" + \
+						f"#{issue.number} > " + \
+						f"{issue.title} -- " + \
+						f"{issue_json['Reward']} 💰\n" + \
+						f"</code>"
+
+		msg += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
+
+		sendMsg(msg, chatid, "html")
 
 	# /body
 	elif "/body" in message[0]:
