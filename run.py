@@ -33,6 +33,10 @@ github_client = Github(GITHUB_ACCESS_TOKEN)
 MD = MarkdownIt()
 ACTIVE_USERS = {}
 
+REPO_LABEL = 'peakshift/telegram-dogecoin'
+REPO = github_client.get_repo(REPO_LABEL)
+
+
 
 monikers_tuple  = [
 	("sandwich","sandwiches",21),
@@ -122,44 +126,30 @@ def process(message, firstname, username, chatid):
 
 	# /work
 	elif "/work" in message[0]:
-		repos = [
-			'peakshift/telegram-dogecoin',
-		]
-
 		# Fetch issues with reward label
-		reward_issues = {}
-		for repo_label in repos:
-			repo_obj = github_client.get_repo(repo_label)
-
-			open_reward_issues = \
-				[issue for issue in repo_obj.get_issues()
-					if "reward" in [label.name for label in issue.labels] ]
-
-			if open_reward_issues:
-				reward_issues[repo_label] = open_reward_issues
+		open_reward_issues = \
+			[issue for issue in REPO.get_issues()
+				if "reward" in [label.name for label in issue.labels] ]
 
 		# Parse reward issue yaml and return info
-		msg = ""
-		for repo_label, open_issues in reward_issues.items():
-			msg += f"\n<b>{repo_label}</b>\n\n"
+		msg = f"\n<b>{REPO_LABEL}</b>\n\n"
+		for issue in open_reward_issues:
+			# TODO: This assumes the yaml is right at the start
+			#       of issue body. Explore making this more robust
+			md_objs = MD.parse(issue.body)
+			yaml_md_obj = None
+			if md_objs:
+				yaml_md_obj, *_ = md_objs
 
-			for issue in open_issues:
-				# TODO: This assumes the yaml is right at the start
-				#		of issue body. Explore making this more robust
-				md_objs = MD.parse(issue.body)
-				yaml_md_obj = None
-				if md_objs:
-					yaml_md_obj, *_ = md_objs
-
-				if yaml_md_obj is not None:
-					issue_yaml = yaml_md_obj.content
-					issue_json = yaml.safe_load(issue_yaml)
-					# issue_json_normalized = json.loads(json.dumps(issue_json, default=myconverter))
-					msg += f"<code>" + \
-						f"#{issue.number} > " + \
-						f"{issue.title} -- " + \
-						f"{issue_json['Reward']} 💰\n" + \
-						f"</code>"
+			if yaml_md_obj is not None:
+				issue_yaml = yaml_md_obj.content
+				issue_json = yaml.safe_load(issue_yaml)
+				# issue_json_normalized = json.loads(json.dumps(issue_json, default=myconverter))
+				msg += f"<code>" + \
+					f"#{issue.number} > " + \
+					f"{issue.title} -- " + \
+					f"{issue_json['Reward']} 💰\n" + \
+					f"</code>"
 
 		msg += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
 
@@ -167,15 +157,18 @@ def process(message, firstname, username, chatid):
 
 	# /body
 	elif "/body" in message[0]:
-		spl = str(message[0]).split("_")
-		if spl[1] != None:
-			#sendMsg(spl[1],chatid)
-			repo = github_client.get_repo('peakshift/telegram-dogecoin')
-			open_issues = repo.get_issue(number=int(spl[1]))
-			#one = MD.parse(open_issues.body)
-			sendMsg(open_issues.body,chatid,"markdown")
+		msg_str = ' '.join(message)
+		issue_num_re = re.search(r'\d+', msg_str)
+		if issue_num_re:
+			issue_num_str = issue_num_re.group(0)
+			issue_num = int(issue_num_str)
+
+			issue = REPO.get_issue(number=issue_num)
+
+			sendMsg(issue.body, chatid, "markdown")
+
 		else:
-			sendMsg("null",chatid)
+			sendMsg("null", chatid)
 
 	# /balance
 	elif "/balance" in message[0]:
