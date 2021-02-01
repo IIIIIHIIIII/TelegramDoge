@@ -173,11 +173,22 @@ def process(message, firstname, username, chatid):
 	# /balance
 	elif "/balance" in message[0]:
 		try:
-			(balance, pending_balance) = returnBal(username)
-			sendMsg("@"+username+"<b> Balance : </b>"+str(math.floor(float(balance)))+ " Doge \n(<b>Pending : </b>"+str(math.floor(float(pending_balance)))+" Doge)",chatid,"html")
+			balance, pending_balance = returnBal(username)
+			bal = math.floor(float(balance))
+			pending_bal = math.floor(float(pending_balance))
+
+			msg = f"@{username}<b> " + \
+				  f"Balance : </b>{bal} Doge \n" + \
+				  f"(<b>Pending : </b>{pending_bal} Doge)"
+
+			sendMsg(msg, chatid, "html")
+
 		except Exception as e:
 			print(e)
-			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
+			msg = f"@{username} you are not registered yet. " + \
+				  f"Use /register to register."
+
+			sendMsg(msg, chatid)
 
 	# /tip
 	elif "/tip" in message[0]:
