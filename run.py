@@ -1,24 +1,42 @@
+import datetime
+import json
+import math
+import os
 import requests
 import time
+from urllib.parse import urljoin
+
 from block_io import BlockIo
-import os
-import math
-import json
 from github import Github
 import yaml
-import datetime
 from markdown_it import MarkdownIt
 
 
-os.system('clear')
-access_token = os.environ['ACCESS_TOKEN']
-token = os.environ['TELEGRAM_BOT_TOKEN'] #Telegram bot token
+# Global constants
+TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
+URL = f"https://api.telegram.org/bot{TOKEN}/"
 
-url = "https://api.telegram.org/bot%s/" %(token)
-n = 0
-version = 2
-block_io = BlockIo(os.environ['BLOCKIO_API_KEY'], os.environ['BLOCKIO_PIN'], version)
-active_users = {}
+UPDATES_OFFSET = 0
+
+
+# Clients
+BLOCKIO_API_KEY = os.environ['BLOCKIO_API_KEY']
+BLOCKIO_PIN = os.environ['BLOCKIO_PIN']
+VERSION = 2
+block_io = BlockIo(BLOCKIO_API_KEY, BLOCKIO_PIN, VERSION)
+
+GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
+github_client = Github(GITHUB_ACCESS_TOKEN)
+
+
+# Global objects
+MD = MarkdownIt()
+ACTIVE_USERS = {}
+
+REPO_LABEL = 'peakshift/telegram-dogecoin'
+REPO = github_client.get_repo(REPO_LABEL)
+
+
 
 monikers_tuple  = [
 	("sandwich","sandwiches",21),
@@ -30,20 +48,35 @@ monikers_dict = {n[i]: n[2] for n in monikers_tuple for i in range(2)}
 monikers_flat = [monikers_tuple[i][j] for i in range(len(monikers_tuple)) for j in range(3)]
 monikers_str  = '\n'.join(f"{i[0]}: {i[2]} doge" for i in monikers_tuple)
 
-md = ( MarkdownIt() )
 
 def getCount(chatid):
 	n = []
 	t = time.time()
-	chat_users = active_users[chatid]
+	chat_users = ACTIVE_USERS[chatid]
 	for i in chat_users:
 		if t - chat_users[i] <= 600:
 			n.append(i)
 	return n
 
-def sendMsg(message,chatid,mode = None):
-	print("just sent a message to - "+str(chatid))
-	requests.get(url + "sendMessage", data={"chat_id":chatid,"text":message,"parse_mode":mode})
+def sendMsg(message, chatid, mode=None):
+	# Prepare request data
+	endpoint = urljoin(URL, "sendMessage")
+	data = {
+		"chat_id": chatid,
+		"text": message,
+		"parse_mode": mode
+	}
+
+	# Send GET request
+	resp = requests.get(endpoint, data=data)
+	success = (200 <= resp.status_code <= 299)
+	if success:
+		print(f"just sent a message to - {chatid}")
+	else:
+		print(f"failed to send message to - {chatid}: " +
+			  f"({resp.status_code}: {resp.reason})")
+
+	return None
 
 def returnBal(username):
 	data = block_io.get_address_balance(labels=username)
@@ -52,81 +85,112 @@ def returnBal(username):
 	return (balance, pending_balance)
 
 def myconverter(o):
-	if isinstance(o, datetime.datetime):
+	if isinstance(o, datetime.date) or isinstance(o, datetime.datetime):
 		return o.__str__()
 
-def process(message,firstname,username,chatid):
+def process(message, firstname, username, chatid):
 	message = message.split(" ")
 	for i in range(message.count(' ')):
 		message.remove(' ')
 
-# /start
+	# /start
 	if "/start" in message[0]:
 		try:
 			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 50 : "+str(e))
 
-# /help
+	# /help
 	elif "/help" in message[0]:
 		try:
 			sendMsg("@" + str(username) + " welcome. I'm the the Peak Shift @ Work Bot\n\nHere's how it works.\n\nYou can use @dogeshift_bot by messaging it directly or in a group that it is a part of.\n\nAvailable Commands\n\n/register - Registers your username with the bot\n/tip @username 10 doge - use this to tip some doge from your balance to another user\n/address - Get your deposit address\n/withdraw 100 <address> - to withdraw your balance",chatid)
 		except Exception as e:
 			print("Error : 55 : "+str(e))
 
-# /register
+	# /register
 	elif "/register" in message[0]:
 		try:
-			a = block_io.get_new_address(label=username)
-			sendMsg("@"+username+" you are now registered.\nYour Address : <code>"+str(a['data']['address'])+"</code>",chatid)
-		except:
-			sendMsg("@"+username+" you are already registered.",chatid)
+			resp = block_io.get_new_address(label=username)
+			addr = resp['data']['address']
 
-# /work
+			msg = f"@{username} you are now registered.\n" +\
+				  f"Your Address : <code>{addr}</code>"
+
+		except Exception as e:
+			msg = f"@{username} you are already registered."
+
+		try:
+			sendMsg(msg, chatid)
+		except Exception as e:
+			pass
+
+	# /work
 	elif "/work" in message[0]:
-		repos = ['peakshift/telegram-dogecoin']
-		g = Github(access_token)
-		msg1 = ""
-		for rep in repos:
-			repo = g.get_repo(rep)
-			open_issues = repo.get_issues()
-			a = 0
-			msg1 += "\n<b>"+str(repo.full_name)+"</b>\n\n"
-			for issue in open_issues:
-				a += 1
-				for x in issue.labels:
-					if x.name == "reward":
-						open_issues = repo.get_issue(number=int(issue.number))
-						one = md.parse(open_issues.body)
-						ym = yaml.safe_load(one[0].content)
-						ymm = json.loads(json.dumps(ym, default = myconverter))
-						msg1 += "<code>#"+str(issue.number)+" > "+str(issue.title)+" -- "+str(ym['Reward'])+" 💰\n</code>"
-		msg1 += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
-		sendMsg(msg1,chatid,"html")
+		# Fetch issues with reward label
+		open_reward_issues = \
+			[issue for issue in REPO.get_issues()
+				if "reward" in [label.name for label in issue.labels] ]
 
-# /body
+		# Parse reward issue yaml and return info
+		msg = f"\n<b>{REPO_LABEL}</b>\n\n"
+		for issue in open_reward_issues:
+			# TODO: This assumes the yaml is right at the start
+			#       of issue body. Explore making this more robust
+			md_objs = MD.parse(issue.body)
+			yaml_md_obj = None
+			if md_objs:
+				yaml_md_obj, *_ = md_objs
+
+			if yaml_md_obj is not None:
+				issue_yaml = yaml_md_obj.content
+				issue_json = yaml.safe_load(issue_yaml)
+				# issue_json_normalized = json.loads(json.dumps(issue_json, default=myconverter))
+				msg += f"<code>" + \
+					f"#{issue.number} > " + \
+					f"{issue.title} -- " + \
+					f"{issue_json['Reward']} 💰\n" + \
+					f"</code>"
+
+		msg += "\n\nUse /body_[issue_number] , Example : <code>/body_13</code>"
+
+		sendMsg(msg, chatid, "html")
+
+	# /body
 	elif "/body" in message[0]:
-		spl = str(message[0]).split("_")
-		if spl[1] != None:
-			#sendMsg(spl[1],chatid)
-			g = Github(access_token)
-			repo = g.get_repo('peakshift/telegram-dogecoin')
-			open_issues = repo.get_issue(number=int(spl[1]))
-			#one = md.parse(open_issues.body)
-			sendMsg(open_issues.body,chatid,"markdown")
-		else:
-			sendMsg("null",chatid)
+		msg_str = ' '.join(message)
+		issue_num_re = re.search(r'\d+', msg_str)
+		if issue_num_re:
+			issue_num_str = issue_num_re.group(0)
+			issue_num = int(issue_num_str)
 
-# /balance
+			issue = REPO.get_issue(number=issue_num)
+
+			sendMsg(issue.body, chatid, "markdown")
+
+		else:
+			sendMsg("null", chatid)
+
+	# /balance
 	elif "/balance" in message[0]:
 		try:
-			(balance, pending_balance) = returnBal(username)
-			sendMsg("@"+username+"<b> Balance : </b>"+str(math.floor(float(balance)))+ " Doge \n(<b>Pending : </b>"+str(math.floor(float(pending_balance)))+" Doge)",chatid,"html")
+			balance, pending_balance = returnBal(username)
+			bal = math.floor(float(balance))
+			pending_bal = math.floor(float(pending_balance))
+
+			msg = f"@{username}<b> " + \
+				  f"Balance : </b>{bal} Doge \n" + \
+				  f"(<b>Pending : </b>{pending_bal} Doge)"
+
+			sendMsg(msg, chatid, "html")
+
 		except Exception as e:
 			print(e)
-			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
+			msg = f"@{username} you are not registered yet. " + \
+				  f"Use /register to register."
 
-# /tip
+			sendMsg(msg, chatid)
+
+	# /tip
 	elif "/tip" in message[0]:
 		try:
 			person = message[1].replace('@','')
@@ -151,7 +215,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" insufficient balance or @"+person+" is not registered yet.",chatid)
 
-# /address
+	# /address
 	elif "/address" in message[0]:
 		try:
 			data = block_io.get_address_by_label(label=username)
@@ -159,7 +223,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" you are not registered yet. use /register to register.",chatid)
 
-# /withdraw
+	# /withdraw
 	elif "/withdraw" in message[0]:
 		try:
 			amount = abs(float(message[1]))
@@ -170,7 +234,7 @@ def process(message,firstname,username,chatid):
 		except:
 			sendMsg("@"+username+" insufficient balance or you are not registered yet.",chatid)
 
-# /rain
+	# /rain
 	elif "/rain" in message[0]:
 		try:
 			users = getCount(chatid)
@@ -191,39 +255,54 @@ def process(message,firstname,username,chatid):
 		except:
 			pass
 
-# /monikers
+	# /monikers
 	elif "/monikers" in message:
 		sendMsg("--MONIKERS--\n" +
 			monikers_str,chatid)
 
-# /active
+	# /active
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
 	else:
-		global active_users
 		try:
-			active_users[chatid][username] = time.time()
+			ACTIVE_USERS[chatid][username] = time.time()
 		except KeyError:
-			active_users[chatid] = {}
-			active_users[chatid][username] = time.time()
+			ACTIVE_USERS[chatid] = {}
+			ACTIVE_USERS[chatid][username] = time.time()
 
 print("-- Bot Started Successfully >_<")
 
-while True:
-	try:
-		data = requests.get(url+"getUpdates", data={"offset":n}).json()
-		n = data["result"][0]["update_id"] + 1
+def serve():
+	while True:
 		try:
-			username = data["result"][0]["message"]["from"]["username"]
-		except:
-			username = "UnKnown uname"
-		try:
-			firstname = data["result"][0]["message"]["from"]["first_name"]
+			updates_endpoint = urljoin(URL, "getUpdates")
+			updates_data = {
+				"offset": UPDATES_OFFSET,
+			}
+
+			resp = requests.get(updates_endpoint, data=updates_data)
+			data = resp.json()
+
+			UPDATES_OFFSET = data["result"][0]["update_id"] + 1
+
+			try:
+				username = data["result"][0]["message"]["from"]["username"]
+			except:
+				username = "UnKnown uname"
+
+			try:
+				firstname = data["result"][0]["message"]["from"]["first_name"]
+			except Exception as e:
+				print(e)
+				firstname = "Unknown name"
+
+			chatid = data["result"][0]["message"]["chat"]["id"]
+			message = data["result"][0]["message"]["text"]
+			process(message,firstname,username,chatid)
+
 		except Exception as e:
-			print(e)
-			firstname = "Unknown name"
-		chatid = data["result"][0]["message"]["chat"]["id"]
-		message = data["result"][0]["message"]["text"]
-		process(message,firstname,username,chatid)
-	except:
-		pass
+			pass
+
+
+if __name__ == "__main__":
+	serve()
