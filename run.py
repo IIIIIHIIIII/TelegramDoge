@@ -16,7 +16,6 @@ from markdown_it import MarkdownIt
 TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 URL = f"https://api.telegram.org/bot{TOKEN}/"
 
-UPDATES_OFFSET = 0
 
 
 # Clients
@@ -264,7 +263,9 @@ def process(message, firstname, username, chatid):
 	elif "/active" in message:
 		sendMsg("Current active : %d shibes" %(len(getCount(chatid))),chatid)
 	else:
-		try:
+		try:,
+,
+,
 			ACTIVE_USERS[chatid][username] = time.time()
 		except KeyError:
 			ACTIVE_USERS[chatid] = {}
@@ -273,6 +274,8 @@ def process(message, firstname, username, chatid):
 print("-- Bot Started Successfully >_<")
 
 def serve():
+	UPDATES_OFFSET = 0
+
 	while True:
 		try:
 			updates_endpoint = urljoin(URL, "getUpdates")
